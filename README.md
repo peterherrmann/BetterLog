@@ -34,7 +34,7 @@ With some good error handling you can catch and log stack traces:
 
 ````js
 function myFunction() {
-  try{
+  try {
     // Add one line to use BetterLog and log to a spreadsheet
     LoggerLogger = BetterLog.useSpreadsheet('your-spreadsheet-key-goes-here'); 
     
@@ -57,7 +57,7 @@ function myFunction() {
   }
 }
 ````
-The log be output like this:
+Errors can be displayed with stacktraces:
 
 ![](http://i.imgur.com/WewgZCD.png)
 
