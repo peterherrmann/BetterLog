@@ -36,7 +36,7 @@ With some good error handling you can catch and log stack traces:
 function myFunction() {
   try {
     // Add one line to use BetterLog and log to a spreadsheet
-    Logger = BetterLog.useSpreadsheet('your-spreadsheet-key-goes-here'); 
+    Logger = BetterLog.useSpreadsheet(SpreadsheetApp.getActiveSpreadsheet().getId()); 
     
     //Now you can log and it will also log to the spreadsheet
     Logger.log("That's all you need to do");  
