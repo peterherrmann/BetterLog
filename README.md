@@ -61,6 +61,16 @@ Errors can be displayed with stacktraces:
 
 ![](http://i.imgur.com/WewgZCD.png)
 
+##Tips & Tricks
+
+You can change the message layout:
+
+````js
+Logger.DATE_TIME_LAYOUT = "''";  //ref http://docs.oracle.com/javase/6/docs/api/java/text/SimpleDateFormat.html
+Logger.log('Look no timestamp!');
+````
+![](http://i.imgur.com/t7NiigO.png)
+
 ## Known Issues
 
 * BetterLog currently can't be used to log from [custom functions](https://developers.google.com/apps-script/guides/sheets/functions) in Google Sheets because [custom functions are run in the context of an anononymous user](https://developers.google.com/apps-script/guides/services/authorization) which means that BetterLog will not be able to edit the spreadsheet to create or append to a log sheet. I'm not aware of a workaround but you could write a web app whose URL could be called anonymously with a query parameter that is written to your log. 
