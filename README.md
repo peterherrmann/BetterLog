@@ -71,6 +71,15 @@ Logger.log('Look no timestamp!');
 ````
 ![](http://i.imgur.com/t7NiigO.png)
 
+## Troubleshooting
+
+Error: Not enough arguments (line 134, file "Code", project "BetterLog")
+
+This can happen if you call the log method without enough arguments. For example, this will cause the error:
+`Logger.log("Test 1 2 %s")`
+whereas this won't cause the error:
+`Logger.log("Test 1 2 %s", "three")`
+
 ## Known Issues
 
 * BetterLog currently can't be used to log from [custom functions](https://developers.google.com/apps-script/guides/sheets/functions) in Google Sheets because [custom functions are run in the context of an anononymous user](https://developers.google.com/apps-script/guides/services/authorization) which means that BetterLog will not be able to edit the spreadsheet to create or append to a log sheet. I'm not aware of a workaround but you could write a web app whose URL could be called anonymously with a query parameter that is written to your log. 
