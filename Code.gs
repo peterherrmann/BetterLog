@@ -23,6 +23,10 @@ var level_ = Level.INFO; //set as default. The log level. We log everything this
 var startTime = new Date();
 var thisApp_ = this;
 var counter = 0; 
+// If the call to log something has no auth then it can't write to a spreadsheet etc so we use a urlfetch to webapp (remoteLogProxy).
+var USE_REMOTE_LOGGER = false; //Default here but evaluated in useSpreadsheet. 
+
+var nativeLogger_ = Logger;
 
 /*************************************************************************
 * public methods
@@ -36,10 +40,20 @@ var counter = 0;
 * @returns {BetterLog} this object, for chaining
 */
 function useSpreadsheet(optKey, optSheetName) {
-  setLogSheet_(optKey, optSheetName);
-  sheet_.getRange(1,1).setValue(SHEET_LOG_HEADER); //in case we need to update
-  rollLogOver_(); //rollover the log if we need to
+  if (hasAuth_()) {
+    setLogSheet_(optKey, optSheetName);
+    sheet_.getRange(1,1).setValue(SHEET_LOG_HEADER); //in case we need to update
+    rollLogOver_(); //rollover the log if we need to
+  } else {
+    USE_REMOTE_LOGGER = true;
+  }
   return thisApp_;
+}
+
+function remoteLogProxy(e) {
+  if (e && e.parameter.betterlogmsg) {
+    call_(function() {sheet_.appendRow([e.parameter.betterlogmsg]);});
+  }
 }
 
 /**
@@ -259,6 +273,16 @@ function getLevel() {
 * @private functions
 ********************/
 
+//in custom function, you do not have permission to call getActiveUser
+function hasAuth_() {
+  try {
+    Session.getActiveUser();
+    return true;
+  } catch (e) {
+    return false; 
+  }
+}
+
 // Returns the string as a Level.
 function stringToLevel_(str) {
   for (var name in Level) {
@@ -304,7 +328,7 @@ function isLoggable_(Level) {
 function log_(msg) {
   counter++;
   //default console logging (built in with Google Apps Script's View > Logs...)
-  Logger.log(convertUsingDefaultPatternLayout_(msg));
+  nativeLogger_.log(convertUsingDefaultPatternLayout_(msg));
   //ss logging
   if (sheet_) {
     logToSheet_(msg);
@@ -336,13 +360,18 @@ function logToSheet_(msg) {
   if (counter % 100 === 0) {
     rollLogOver_();
   }
-  //sheet_.appendRow([convertUsingSheetPatternLayout_(msg)]);
-  call_(function() {sheet_.appendRow([convertUsingSheetPatternLayout_(msg)]);});
+  var message = convertUsingSheetPatternLayout_(msg);
+  if (USE_REMOTE_LOGGER) {
+    var url = ScriptApp.getService().getUrl()+'?betterlogmsg='+message;
+    call_(function() {UrlFetchApp.fetch(url);});
+  } else {
+    call_(function() {sheet_.appendRow([message]);});
+  }
 }
 // convert message to text string
 function convertUsingDefaultPatternLayout_(msg) {
   var dt = Utilities.formatDate(msg.time, Session.getScriptTimeZone(), DATE_TIME_LAYOUT);
-  var message = dt + " " + pad_(msg.elapsedTime,6) + " " + levelToString_(msg.level) + " " + msg.message;
+  var message = dt + " " + pad_(msg.elapsedTime,6) + " " + levelToString_(msg.level) + " " + (USE_REMOTE_LOGGER ? 'REMOTE ': '') + msg.message;
   return message;
 }
 // convert message to text string
