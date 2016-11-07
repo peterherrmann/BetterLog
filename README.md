@@ -73,12 +73,17 @@ Logger.log('Look no timestamp!');
 
 ## Troubleshooting
 
-Error: Not enough arguments (line 134, file "Code", project "BetterLog")
+##### `Error: Not enough arguments (line 134, file "Code", project "BetterLog")`
 
 This can happen if you call the log method without enough arguments. For example, this will cause the error:
 `Logger.log("Test 1 2 %s")`
 whereas this won't cause the error:
 `Logger.log("Test 1 2 %s", "three")`
+
+##### `Execution failed: You do not have permission to perform that action. (line 384, file "Code", project "BetterLog")`
+
+You may need to run a function (any or an empty dummy function) in [the IDE](https://script.google.com/). This
+will provoke the script authorization.
 
 ## Known Issues
 
