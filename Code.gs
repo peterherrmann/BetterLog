@@ -6,6 +6,7 @@ var SHEET_MAX_ROWS = 50000; //sheet is cleared and starts again
 var SHEET_LOG_CELL_WIDTH = 1000; //
 var SHEET_LOG_HEADER = 'Message layout: Date Time UTC-Offset MillisecondsSinceInvoked LogLevel Message. Use Ctrl↓ (or Command↓) to jump to the last row';
 var DATE_TIME_LAYOUT = 'yyyy-MM-dd HH:mm:ss:SSS Z'; //http://docs.oracle.com/javase/6/docs/api/java/text/SimpleDateFormat.html
+var JSON_SPACES = 0; //the number of space characters to use as white space; 
 
 //ref http://docs.oracle.com/javase/7/docs/api/java/util/logging/Level.html
 var Level = Object.freeze({
@@ -20,7 +21,7 @@ var Level = Object.freeze({
   ALL: Number.MIN_VALUE});
 
 var level_ = Level.INFO; //set as default. The log level. We log everything this level or greater.
-var startTime = new Date();
+var START_TIME = new Date(); //so we can calculate elapsed time;
 var thisApp_ = this;
 var counter = 0; 
 // If the call to log something has no auth then it can't write to a spreadsheet etc so we use a urlfetch to webapp (remoteLogProxy).
@@ -68,11 +69,7 @@ function remoteLogProxy(e) {
 function severe(message, optValues) {
   var lev = Level.SEVERE;
   if (isLoggable_(lev)) {
-    log_({"message": (typeof message == 'string' || message instanceof String) ? Utilities.formatString.apply(this, arguments) : message,
-          "level": lev,
-          "time": new Date(),
-          "elapsedTime": getElapsedTime_()
-         });
+    log_(arguments, lev);
   }
   return thisApp_;
 }
@@ -89,11 +86,7 @@ function severe(message, optValues) {
 function warning(message, optValues) {
   var lev = Level.WARNING;
   if (isLoggable_(lev)) {
-    log_({"message": (typeof message == 'string' || message instanceof String) ? Utilities.formatString.apply(this, arguments) : message,
-          "level": lev,
-          "time": new Date(),
-          "elapsedTime": getElapsedTime_()
-         });
+    log_(arguments, lev);
   }
   return thisApp_;
 }
@@ -136,11 +129,7 @@ function myFunction() {
 function info(message, optValues) {
   var lev = Level.INFO;
   if (isLoggable_(lev)) {
-    log_({"message": (typeof message == 'string' || message instanceof String) ? Utilities.formatString.apply(this, arguments) : message,
-          "level": lev,
-          "time": new Date(),
-          "elapsedTime": getElapsedTime_()
-         });
+    log_(arguments, lev);
   }
   return thisApp_;
 }
@@ -157,11 +146,7 @@ function info(message, optValues) {
 function config(message, optValues) {
   var lev = Level.CONFIG;
   if (isLoggable_(lev)) {
-    log_({"message": (typeof message == 'string' || message instanceof String) ? Utilities.formatString.apply(this, arguments) : message,
-          "level": lev,
-          "time": new Date(),
-          "elapsedTime": getElapsedTime_()
-         });
+    log_(arguments, lev);
   }
   return thisApp_;
 }
@@ -184,11 +169,7 @@ function config(message, optValues) {
 function fine(message, optValues) {
   var lev = Level.FINE;
   if (isLoggable_(lev)) {
-    log_({"message": (typeof message == 'string' || message instanceof String) ? Utilities.formatString.apply(this, arguments) : message,
-          "level": lev,
-          "time": new Date(),
-          "elapsedTime": getElapsedTime_()
-         });
+    log_(arguments, lev);
   }
   return thisApp_;
 }
@@ -204,11 +185,7 @@ function fine(message, optValues) {
 function finer(message, optValues) {
   var lev = Level.FINER;
   if (isLoggable_(lev)) {
-    log_({"message": (typeof message == 'string' || message instanceof String) ? Utilities.formatString.apply(this, arguments) : message,
-          "level": lev,
-          "time": new Date(),
-          "elapsedTime": getElapsedTime_()
-         });
+    log_(arguments, lev);
   }
   return thisApp_;
 }
@@ -223,11 +200,7 @@ function finer(message, optValues) {
 function finest(message, optValues) {
   var lev = Level.FINEST;
   if (isLoggable_(lev)) {
-    log_({"message": (typeof message == 'string' || message instanceof String) ? Utilities.formatString.apply(this, arguments) : message,
-          "level": lev,
-          "time": new Date(),
-          "elapsedTime": getElapsedTime_()
-         });
+    log_(arguments, lev);
   }
   return thisApp_;
 }
@@ -325,19 +298,27 @@ function isLoggable_(Level) {
 }
 
 //core logger function
-function log_(msg) {
+function log_(msgArgs, level) {
   counter++;
+  
+  // get args and transform objects to strings like the native logger does.
+  var args = Array.prototype.slice.call(msgArgs).map(function(e){
+    return e !== null && typeof e === 'object' ? JSON.stringify(e, null, JSON_SPACES) : e;
+  });
+  
+  var msg =  (typeof msgArgs[0] == 'string' || msgArgs[0] instanceof String) ? Utilities.formatString.apply(this, args) : msgArgs[0];  
+  
   //default console logging (built in with Google Apps Script's View > Logs...)
-  nativeLogger_.log(convertUsingDefaultPatternLayout_(msg));
+  nativeLogger_.log(convertUsingDefaultPatternLayout_(msg, level));
   //ss logging
   if (sheet_) {
-    logToSheet_(msg);
+    logToSheet_(msg, level);
   }
 }
 
 //  rolls over the log if we need to
 function rollLogOver_() {
-  var rowCount = sheet_.getLastRow();
+  var rowCount = call_(function() {return sheet_.getLastRow();});
   if (rowCount > SHEET_MAX_ROWS) {
     //copy the log
     var ss = sheet_.getParent();
@@ -355,12 +336,12 @@ function rollLogOver_() {
 }
 
 //logs to spreadsheet
-function logToSheet_(msg) {
+function logToSheet_(msg, level) {
   //check for rollover every 100 rows logged during one invocation
   if (counter % 100 === 0) {
     rollLogOver_();
   }
-  var message = convertUsingSheetPatternLayout_(msg);
+  var message = convertUsingSheetPatternLayout_(msg, level);
   if (USE_REMOTE_LOGGER) {
     var url = ScriptApp.getService().getUrl()+'?betterlogmsg='+message;
     call_(function() {UrlFetchApp.fetch(url);});
@@ -369,14 +350,15 @@ function logToSheet_(msg) {
   }
 }
 // convert message to text string
-function convertUsingDefaultPatternLayout_(msg) {
-  var dt = Utilities.formatDate(msg.time, Session.getScriptTimeZone(), DATE_TIME_LAYOUT);
-  var message = dt + " " + pad_(msg.elapsedTime,6) + " " + levelToString_(msg.level) + " " + (USE_REMOTE_LOGGER ? 'REMOTE ': '') + msg.message;
+function convertUsingDefaultPatternLayout_(msg, level) {
+  var now = new Date;
+  var dt = Utilities.formatDate(now, Session.getScriptTimeZone(), DATE_TIME_LAYOUT);
+  var message = dt + " " + pad_(now - START_TIME, 6) + " " + levelToString_(level) + " " + (USE_REMOTE_LOGGER ? 'REMOTE ': '') + msg;
   return message;
 }
 // convert message to text string
-function convertUsingSheetPatternLayout_(msg) {
-  return convertUsingDefaultPatternLayout_(msg);
+function convertUsingSheetPatternLayout_(msg, level) {
+  return convertUsingDefaultPatternLayout_(msg, level);
 }
 //Sets the log sheet, creating one if it doesn't exist
 function setLogSheet_(optKey, optSheetName) {
@@ -397,10 +379,6 @@ function setLogSheet_(optKey, optSheetName) {
   info("Log created");
 }
 
-//gets the time since the start of logging
-function getElapsedTime_(){
-  return (new Date() - startTime); //milliseconds
-}
 // pads a number with leading zeros
 function pad_(n,len) {
   var s = n.toString();
@@ -409,39 +387,11 @@ function pad_(n,len) {
   } 
   return s;
 }
-function getFormattedStringnewish_(args) {
-  if (args.length === 1) {
-    return args[0];
-  }
-  var afunction = Utilities.formatString;
-  return afunction.apply(this, arguments);
-}
-function getFormattedString_(args) {
-  //http://stackoverflow.com/q/15913071/298650
-  if (args.length === 1) return args[0];
-  for (var i = 0, arr = []; i < args.length; ++i) {
-    args[i] = (args[i] === '')? args[i] : args[i]||'undefined'; //undefined become strings 'undefined'
-    arr.push('args[' + i + ']');
-  }
-  var result = eval('Utilities.formatString(' + arr.join() + ')');
-  return result;
-}
-function getFormattedStringA_(args) {
-  //(typeof message == 'string' || message instanceof String) : Utilities.formatString.apply(this, arguments),
-  /*if (args.length === 1) {
-    return args[0];
-  }*/
 
-  return Utilities.formatString.apply(this, arguments);
-}
 function test(message, optValues) {
   var lev = Level.INFO;
   if (isLoggable_(lev)) {
-    log_({"message": (typeof message == 'string' || message instanceof String) ? Utilities.formatString.apply(this, arguments) : message,
-          "level": lev,
-          "time": new Date(),
-          "elapsedTime": getElapsedTime_()
-         });
+    log_(arguments, lev);
   }
   return thisApp_;
 }
