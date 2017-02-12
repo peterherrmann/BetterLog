@@ -303,7 +303,9 @@ function log_(msgArgs, level) {
   
   // get args and transform objects to strings like the native logger does.
   var args = Array.prototype.slice.call(msgArgs).map(function(e){
-    return e !== null && typeof e === 'object' ? JSON.stringify(e, null, JSON_SPACES) : e;
+    var type = typeof e;
+    if (type === 'undefined') return 'undefined';
+    return e !== null && type === 'object' ? JSON.stringify(e, null, JSON_SPACES) : e;
   });
   
   var msg =  (typeof msgArgs[0] == 'string' || msgArgs[0] instanceof String) ? Utilities.formatString.apply(this, args) : msgArgs[0];  
