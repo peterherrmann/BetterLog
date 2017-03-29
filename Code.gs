@@ -324,7 +324,8 @@ function rollLogOver_() {
   if (rowCount > SHEET_MAX_ROWS) {
     
     // get a lock or throw exception
-    var lock = LockService.getScriptLock().waitLock(10000); //try for 10 secs to get a lock, long enough to rollover the log
+    var lock = LockService.getScriptLock();
+    lock.waitLock(10000); //try for 10 secs to get a lock, long enough to rollover the log
     
     //copy the log
     var ss = sheet_.getParent();
