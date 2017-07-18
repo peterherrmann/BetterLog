@@ -87,5 +87,5 @@ will provoke the script authorization.
 
 ## Known Issues
 
-* BetterLog currently can't be used to log from [custom functions](https://developers.google.com/apps-script/guides/sheets/functions) to a sheets based log because [custom functions are run in the context of an anononymous user](https://developers.google.com/apps-script/guides/services/authorization) which means that BetterLog will not be able to append to a non-publicly editable log sheet. The inbuild Stackdriver logging (from v26 onwards) will however log to Stackdriver logs.
+* BetterLog currently can't be used to log from [custom functions](https://developers.google.com/apps-script/guides/sheets/functions) to a sheets based log because [custom functions are run in the context of an anononymous user](https://developers.google.com/apps-script/guides/services/authorization) which means that BetterLog will not be able to append to a non-publicly editable log sheet. The automatic Stackdriver logging (from v26 onwards) will however log to Stackdriver logs.
 
