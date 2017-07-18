@@ -24,8 +24,6 @@ var level_ = Level.INFO; //set as default. The log level. We log everything this
 var START_TIME = new Date(); //so we can calculate elapsed time;
 var thisApp_ = this;
 var counter = 0; 
-// If the call to log something has no auth then it can't write to a spreadsheet etc so we use a urlfetch to webapp (remoteLogProxy).
-var USE_REMOTE_LOGGER = false; //Default here but evaluated in useSpreadsheet. 
 
 var nativeLogger_ = Logger;
 
@@ -45,16 +43,8 @@ function useSpreadsheet(optKey, optSheetName) {
     setLogSheet_(optKey, optSheetName);
     sheet_.getRange(1,1).setValue(SHEET_LOG_HEADER); //in case we need to update
     rollLogOver_(); //rollover the log if we need to
-  } else {
-    USE_REMOTE_LOGGER = true;
-  }
+  } 
   return thisApp_;
-}
-
-function remoteLogProxy(e) {
-  if (e && e.parameter.betterlogmsg) {
-    call_(function() {sheet_.appendRow([e.parameter.betterlogmsg]);});
-  }
 }
 
 /**
@@ -312,6 +302,24 @@ function log_(msgArgs, level) {
   
   //default console logging (built in with Google Apps Script's View > Logs...)
   nativeLogger_.log(convertUsingDefaultPatternLayout_(msg, level));
+  
+  //stackdriver console logging
+  if (typeof console !== "undefined" && typeof console.time !== "undefined") {
+    switch(level) {
+      case Level.INFO:
+        console.log(msg);
+        break;
+      case Level.SEVERE:
+        console.error(msg);
+        break;
+      case Level.WARNING:
+        console.warn(msg);
+        break;
+    default:
+        console.info(msg);
+    }
+  }
+  
   //ss logging
   if (sheet_) {
     logToSheet_(msg, level);
@@ -355,18 +363,15 @@ function logToSheet_(msg, level) {
     rollLogOver_();
   }
   var message = convertUsingSheetPatternLayout_(msg, level);
-  if (USE_REMOTE_LOGGER) {
-    var url = ScriptApp.getService().getUrl()+'?betterlogmsg='+message;
-    call_(function() {UrlFetchApp.fetch(url);});
-  } else {
-    call_(function() {sheet_.appendRow([message]);});
-  }
+  if (hasAuth_()) {
+     call_(function() {sheet_.appendRow([message]);});
+   }
 }
 // convert message to text string
 function convertUsingDefaultPatternLayout_(msg, level) {
   var now = new Date;
   var dt = Utilities.formatDate(now, Session.getScriptTimeZone(), DATE_TIME_LAYOUT);
-  var message = dt + " " + pad_(now - START_TIME, 6) + " " + levelToString_(level) + " " + (USE_REMOTE_LOGGER ? 'REMOTE ': '') + msg;
+  var message = dt + " " + pad_(now - START_TIME, 6) + " " + levelToString_(level) + " " + msg;
   return message;
 }
 // convert message to text string
