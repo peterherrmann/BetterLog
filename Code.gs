@@ -307,7 +307,7 @@ function log_(msgArgs, level) {
   if (typeof console !== "undefined" && typeof console.time !== "undefined") {
     switch(level) {
       case Level.INFO:
-        console.log(msg);
+        console.info(msg);
         break;
       case Level.SEVERE:
         console.error(msg);
