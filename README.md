@@ -9,7 +9,7 @@ code editor:
 
 1. Click on the menu item "Resources > Libraries..."
 2. In the "Find a Library" text box, enter the project key
-   `MYB7yzedMbnJaMKECt6Sm7FLDhaBgl_dE` and click the "Select" button.
+   `MYB7yzedMbnJaMKECt6Sm7FLDhaBgl_dE` (or now, `1DSyxam1ceq72bMHsE6aOVeOl94X78WCwiYPytKi7chlg4x5GqiNXSw0l`) and click the "Select" button.
 3. Choose a version in the dropdown box (usually best to pick the latest
    version).
 4. Click the "Save" button.
