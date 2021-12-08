@@ -298,8 +298,23 @@ function log_(msgArgs, level) {
     return e !== null && type === 'object' ? JSON.stringify(e, null, JSON_SPACES) : e;
   });
   
-  var msg =  (typeof msgArgs[0] == 'string' || msgArgs[0] instanceof String) ? Utilities.formatString.apply(this, args) : msgArgs[0];  
-  
+  var msg = msgArgs[0];
+  if (typeof msgArgs[0] == 'string' || msgArgs[0] instanceof String) {
+    try {
+      msg = Utilities.formatString.apply(this, args)
+    } catch (error) {
+      if (error.message === 'Not enough arguments') {
+        if (msgArgs.length === 2 && Array.isArray(msgArgs[1])) {
+          throw Error('Format string requires multiple arguments and only a single array passed in.');
+        } else {
+          throw Error('Not enough arguments passed in for given format string.');
+        }
+      } else {
+        throw(error);
+      }
+    }
+  }
+
   //default console logging (built in with Google Apps Script's View > Logs...)
   nativeLogger_.log(convertUsingDefaultPatternLayout_(msg, level));
   
